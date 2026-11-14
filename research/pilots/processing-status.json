@@ -1,0 +1,63 @@
+{
+  "scope": "Three 100 x 100 km pilot regions only; not global ingestion",
+  "candidate_registry": "../variables/candidates.json",
+  "candidate_definitions": 91,
+  "terrain_pilot": {
+    "status": "extracted_pending_scientific_review",
+    "manifest": "terrain/run.json",
+    "candidate_to_output_mapping": {
+      "terrain.elevation": [
+        "terrain.elevation.min",
+        "terrain.elevation.mean",
+        "terrain.elevation.max",
+        "terrain.elevation.stddev"
+      ],
+      "terrain.slope": [
+        "terrain.slope.mean",
+        "terrain.slope.stddev",
+        "terrain.slope.max"
+      ],
+      "terrain.roughness": [
+        "terrain.roughness_3x3.mean"
+      ],
+      "terrain.topographic_position": [
+        "terrain.topographic_position_3x3.mean"
+      ],
+      "terrain.local_relief": [
+        "terrain.local_relief_3x3.mean"
+      ],
+      "terrain.aspect": [
+        "terrain.aspect_eastness.mean",
+        "terrain.aspect_northness.mean"
+      ]
+    },
+    "aspect_note": "Components available; no mean angle in degrees has been published.",
+    "deferred_terrain_candidates": [
+      "terrain.plan_curvature",
+      "terrain.potential_solar_exposure",
+      "terrain.profile_curvature",
+      "terrain.sky_view_factor"
+    ]
+  },
+  "temperature": {
+    "status": "requests_prepared_authentication_required_not_submitted",
+    "source": "MOD11A2.061",
+    "request_directory": "nasa-subsets",
+    "remaining_steps": [
+      "NASA authentication",
+      "submit and retrieve subsets",
+      "validate actual headers, scaling and QA",
+      "implement tile aggregation and validate outputs"
+    ]
+  },
+  "other_candidates": {
+    "status": "catalog_discovery_only",
+    "count": 85,
+    "note": "Includes temperature and deferred terrain candidates; catalog presence is not extracted data."
+  },
+  "postgresql": {
+    "status": "not_implemented_or_loaded",
+    "next_artifacts": "Migrations and CSV ingestion using the documented schema"
+  },
+  "all_91_variables_processed": false
+}

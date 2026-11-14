@@ -9,3 +9,13 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Reproducible public catalog response cache
+research/pilots/catalog-cache/
+research/variables/catalog-cache/
+
+# Python bytecode
+__pycache__/
+
+# Per-account NASA job receipts (request payloads remain reproducible)
+research/pilots/nasa-subsets/receipts.json

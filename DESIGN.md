@@ -651,9 +651,27 @@ uses remote native DEM windows and retains only CSV summaries, clipped cell
 geometries and provenance; no source rasters are archived. Boundary-cell support
 is explicitly the intersection with the pilot region. Product quality limitations,
 static/mixed-epoch time semantics and derivative operators are recorded in its
-run manifest. NASA temperature subset requests are prepared separately and
-require Earthdata authentication before submission. PostgreSQL ingestion and
-publication remain subsequent implementation steps.
+run manifest.
+
+Temperature extraction is recorded in `research/pilots/temperature-native/run.json`:
+the same cells, 46 MOD11A2.061 composite windows covering 2024, and three output
+statistics with separate valid-area fractions. Eight concurrent original-file
+downloads completed the three regions in 103.6 seconds, with one temporary HDF4
+file decoded at a time and no raster archive retained. Original headers, raw QA
+zero, unit scaling, native-grid fractional overlap, paired support, source hashes
+and explicit missingness are checked. These checks support a research artifact;
+they do not constitute a reviewed global scientific release. PostgreSQL ingestion
+and publication remain subsequent implementation steps.
+
+The frontend roadmap is exported in `catalog/variables.json`, with the complete
+human-readable list in `docs/VARIABLES.md` and proposed TypeScript response types
+in `catalog/types.ts`. Stable quantity IDs are distinct from statistic/operator
+output IDs. Definitions expose proposed units, dimensional axes and availability;
+all production-availability flags remain false until a database/API release is
+loaded. Eight quantities have pilot statistics and aspect has component outputs;
+the remaining candidates are planned or deferred. This contract is suitable for
+building selectors, with categorical vocabularies and source-specific limits
+added only after validation.
 
 1. Database setup, roles, migrations, catalog, grid, and temporal constraints.
 2. Processing lineage, typed observations, sealed series, and ingestion fixtures.

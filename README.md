@@ -3,9 +3,26 @@
 A PostgreSQL/PostGIS feature index for geographic screening and Earth–Moon–Mars
 analog research. See [DESIGN.md](DESIGN.md) for the database specification.
 
-The repository currently contains source discovery and a working local terrain
-pilot. It does not yet contain a running PostgreSQL database or a published
-scientific release.
+The repository currently contains source discovery and working local terrain
+and temperature pilots. It does not yet contain a running PostgreSQL database,
+query API, or published scientific release.
+
+## Frontend catalog
+
+The [complete variable list](docs/VARIABLES.md) covers 91 candidates across 17
+groups. [Machine-readable definitions](catalog/variables.json) include stable
+IDs, labels, proposed units, dimensions, source mappings and explicit pilot
+availability. [TypeScript types](catalog/types.ts) and a
+[real pilot observation example](catalog/observation-example.json) support
+frontend development before the API is implemented.
+
+Eight variables have processed pilot statistics; aspect has related components.
+Other fields remain planned or deferred. This roadmap does not promise that all
+candidates will pass source and scientific validation. Regenerate it with:
+
+```sh
+python3 scripts/export_frontend_catalog.py
+```
 
 ## Discovery
 
@@ -65,7 +82,32 @@ ETags are recorded as opaque identifiers, not assumed to be content checksums.
 Source: [Copernicus product description](https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM).
 Methods: [exactextract operations](https://isciences.github.io/exactextract/operations.html).
 
-## NASA temperature subsets
+## Parallel NASA temperature processing
+
+The completed temperature pilot uses original MOD11A2.061 HDF4 files for all
+46 composite windows in 2024. Eight parallel downloads interleave all three
+regions. HDF4 decoding runs one file at a time to avoid library races; only the
+intersecting source window is decoded, then the temporary file is deleted.
+
+```sh
+uv run scripts/process_native_temperature.py --credentials-file /private/path/to/login
+uv run scripts/test_native_temperature.py
+uv run scripts/test_nasa_temperature.py
+python3 scripts/validate_nasa_temperature.py --native
+```
+
+The measured run completed in **103.6 seconds**, used **314 MiB peak process
+memory**, transferred **884 MB** of original payloads, and used at most **7.3 MB**
+for a single scratch raster. No rasters remain. Summaries and provenance occupy
+about **8.2 MB** under `research/pilots/temperature-native/`.
+
+The 44,114 cell-window rows contain mean day/night temperatures, paired-pixel
+day-minus-night differences, and separate valid-area fractions. There are
+118,703 valid numeric values and 13,639 missing values after strict QA screening;
+missingness is retained rather than imputed. See the
+[method and results](research/pilots/temperature-native/README.md).
+
+## Optional NASA server-side subsets
 
 ```sh
 python3 scripts/prepare_nasa_subsets.py
@@ -119,8 +161,13 @@ flags; they do not establish that every constituent daily retrieval met this QA.
 Source pixels and signed S3 download URLs remain in memory and are discarded;
 only summaries and whitelisted provenance are retained. Eight fixtures cover
 unit conversion, missingness, QA, fractional overlap, paired support, temporal
-windows, alignment, and credential stripping on signed redirects. Actual source
-header checks and completed-region validation remain gated on NASA job completion.
+windows, alignment, and credential stripping on signed redirects. The first
+returned Atacama bundle included an extra 2023 date and lacked two daytime QA
+exports. The consumer fails closed on incomplete layer groups; it does not infer
+missing QA. The direct native-file path above supplies the completed, validated
+temperature outputs independently of these jobs. The AppEEARS downloader also
+rejects redirect hosts outside its configured AWS allowlist, so this optional
+path may need adaptation to current service routing.
 Emissivity and clear-sky layers were requested for later validation but are not
 yet included in the temperature summary CSVs. These are research artifacts;
 PostgreSQL loading and scientific publication remain subsequent steps.

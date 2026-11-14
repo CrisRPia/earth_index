@@ -40,27 +40,42 @@
     ]
   },
   "temperature": {
-    "status": "authenticated_jobs_submitted_waiting_for_NASA",
+    "status": "extracted_pending_scientific_review",
     "source": "MOD11A2.061",
-    "request_directory": "nasa-subsets",
-    "remaining_steps": [
-      "NASA server-side job completion",
-      "inspect actual returned headers and scaling",
-      "quality-screened cell aggregation",
-      "validate completed temperature outputs"
-    ],
-    "authentication_status": "verified",
-    "submitted_requests": 3,
-    "consumer_script": "../../scripts/process_nasa_temperature.py"
+    "method": "native HDF4 with eight concurrent downloads and serial bounded-window decoding",
+    "manifest": "temperature-native/run.json",
+    "validation": "temperature-native/validation.json",
+    "consumer_script": "../../scripts/process_native_temperature.py",
+    "cells": 959,
+    "windows": 46,
+    "cell_window_rows": 44114,
+    "valid_feature_values": 118703,
+    "missing_feature_values": 13639,
+    "candidate_to_output_mapping": {
+      "temperature.surface.day": "day_k",
+      "temperature.surface.night": "night_k",
+      "temperature.surface.composite_day_night_difference": "paired_day_minus_night_k"
+    },
+    "optional_appeears_requests": {
+      "directory": "nasa-subsets",
+      "submitted_requests": 3,
+      "note": "Independent of completed native processing; first subset bundle lacked two daytime QA exports. No missing QA was inferred."
+    }
   },
   "other_candidates": {
     "status": "catalog_discovery_only",
-    "count": 85,
-    "note": "Includes temperature and deferred terrain candidates; catalog presence is not extracted data."
+    "count": 82,
+    "note": "Excludes six terrain quantities with pilot outputs/components and three processed temperature quantities; includes deferred EVI. Catalog presence is not extracted data."
   },
   "postgresql": {
     "status": "not_implemented_or_loaded",
     "next_artifacts": "Migrations and CSV ingestion using the documented schema"
   },
-  "all_91_variables_processed": false
+  "all_91_variables_processed": false,
+  "frontend_catalog": {
+    "definitions": "../../catalog/variables.json",
+    "human_list": "../../docs/VARIABLES.md",
+    "types": "../../catalog/types.ts",
+    "production_API_available": false
+  }
 }

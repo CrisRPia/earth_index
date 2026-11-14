@@ -40,15 +40,18 @@
     ]
   },
   "temperature": {
-    "status": "requests_prepared_authentication_required_not_submitted",
+    "status": "authenticated_jobs_submitted_waiting_for_NASA",
     "source": "MOD11A2.061",
     "request_directory": "nasa-subsets",
     "remaining_steps": [
-      "NASA authentication",
-      "submit and retrieve subsets",
-      "validate actual headers, scaling and QA",
-      "implement tile aggregation and validate outputs"
-    ]
+      "NASA server-side job completion",
+      "inspect actual returned headers and scaling",
+      "quality-screened cell aggregation",
+      "validate completed temperature outputs"
+    ],
+    "authentication_status": "verified",
+    "submitted_requests": 3,
+    "consumer_script": "../../scripts/process_nasa_temperature.py"
   },
   "other_candidates": {
     "status": "catalog_discovery_only",

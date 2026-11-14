@@ -91,9 +91,38 @@ python3 scripts/prepare_nasa_subsets.py --status --credentials-file /private/pat
 
 The helper logs in to AppEEARS, keeps the temporary token in memory, saves only
 task receipts, and logs out. It does not forward credentials through redirects.
-It avoids resubmitting a request with the same saved payload hash. A submitted
-request still needs output retrieval, product-specific QA/scale validation, and
-tile aggregation; those temperature ingestion stages are not implemented yet.
-No NASA temperature values have been imported merely by preparing a request.
+It avoids resubmitting a request with the same saved payload hash. Authentication
+has been verified and all three pilot requests have been submitted. Request
+submission is separate from completing NASA's server-side subset processing.
+
+The in-memory consumer can inspect the first returned headers or aggregate all
+completed regions. It reports queued regions explicitly; rerunning it reuses
+completed summaries only when their code, geometry, task and CSV hashes match.
+
+```sh
+uv run scripts/process_nasa_temperature.py --inspect --credentials-file /private/path/to/login
+uv run scripts/process_nasa_temperature.py --credentials-file /private/path/to/login
+uv run scripts/test_nasa_temperature.py
+python3 scripts/validate_nasa_temperature.py
+```
+
+Temperature artifacts live under `research/pilots/temperature/`. Each completed
+region has one row per H3 cell and 8-day window, with mean day/night temperatures,
+paired-pixel day-minus-night difference, and separate valid-area fractions.
+The last leap-year 2024 composite is six days. Empty values remain missing.
+The reader verifies NASA's SHA-256 hashes, decodes supported temperature storage
+formats exactly once, checks native grid alignment, and keeps only QA byte zero
+(good production/data flags, emissivity error ≤0.01, LST error ≤1 K). QA zero is
+not treated as a missing value. Composite flags describe majority daily input
+flags; they do not establish that every constituent daily retrieval met this QA.
+
+Source pixels and signed S3 download URLs remain in memory and are discarded;
+only summaries and whitelisted provenance are retained. Eight fixtures cover
+unit conversion, missingness, QA, fractional overlap, paired support, temporal
+windows, alignment, and credential stripping on signed redirects. Actual source
+header checks and completed-region validation remain gated on NASA job completion.
+Emissivity and clear-sky layers were requested for later validation but are not
+yet included in the temperature summary CSVs. These are research artifacts;
+PostgreSQL loading and scientific publication remain subsequent steps.
 
 API: [AppEEARS documentation](https://appeears.earthdatacloud.nasa.gov/api/).

@@ -11,7 +11,7 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,12 +48,36 @@ def request(path, *, data=None, authorization=None):
     )
     try:
         with build_opener(NoRedirect).open(req, timeout=60) as response:
+            if response.status == 204:
+                return None
             return json.load(response)
     except HTTPError as e:
         # Do not print response bodies, credentials, or authentication headers.
         raise RuntimeError(
             f"NASA API {path.split('/')[1]} returned HTTP {e.code}"
         ) from None
+    except URLError:
+        raise RuntimeError("NASA API connection failed") from None
+
+
+def login_credentials(path):
+    secret = path.read_text().strip()
+    username, separator, password = secret.partition(":")
+    if not separator or not username or not password:
+        raise RuntimeError("Private login must contain username:password")
+    login = request(
+        "/login",
+        data={},
+        authorization="Basic " + base64.b64encode(secret.encode()).decode(),
+    )
+    return "Bearer " + login["token"]
+
+
+def logout(bearer):
+    try:
+        request("/logout", data={}, authorization=bearer)
+    except RuntimeError:
+        pass
 
 
 def main():
@@ -105,17 +129,7 @@ def main():
     if not (args.submit or args.status):
         print(f"Prepared {len(tasks)} area requests; NASA login is required to submit.")
         return
-    secret = args.credentials_file.read_text().strip()
-    username, separator, password = secret.partition(":")
-    if not separator or not username or not password:
-        raise RuntimeError("Private login must contain username:password")
-    login = request(
-        "/login",
-        data={},
-        authorization="Basic " + base64.b64encode(secret.encode()).decode(),
-    )
-    bearer = "Bearer " + login["token"]
-    del secret, username, password, login
+    bearer = login_credentials(args.credentials_file)
     receipts_path = OUT / "receipts.json"
     receipts = json.loads(receipts_path.read_text()) if receipts_path.exists() else []
     try:
@@ -149,11 +163,7 @@ def main():
                 print(f"{site}: submitted {receipt['task_id']}")
             receipts_path.write_text(json.dumps(receipts, indent=2) + "\n")
     finally:
-        # Logout uses POST with an empty JSON object; avoid persisting the token.
-        try:
-            request("/logout", data={}, authorization=bearer)
-        except (RuntimeError, json.JSONDecodeError):
-            pass
+        logout(bearer)
 
 
 if __name__ == "__main__":

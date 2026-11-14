@@ -21,7 +21,8 @@ not a local raster archive. Ingestion imports existing provider summaries where
 their spatial and temporal support match the target feature. Otherwise, workers
 read the necessary source windows, compute tile statistics, and load only those
 statistics and their provenance into PostgreSQL. The later API, MCP server, and
-map UI consume the same database interface.
+map UI consume the same database interface. The API implementation language is
+**Rust**; ingestion workers may retain the existing Python scientific tooling.
 
 Catalog discovery reads metadata only. Computing a new tile mean, slope, or other
 feature may require reading raster values even though those pixels are not retained.
@@ -48,6 +49,8 @@ scientific equivalence between planetary measurements are outside the MVP.
 | Concern | Decision |
 | --- | --- |
 | Database | PostgreSQL 18; pin a supported patch release in deployment |
+| Local deployment | Docker Compose with PostgreSQL/PostGIS and a persistent named volume |
+| API language | Rust, using a separate database role for API reads |
 | Required extension | PostGIS, with a release compatible with the deployment |
 | Geographic grid | H3 for Earth, initially resolution 5 for regional screening |
 | H3 integration | Generate/validate identifiers and boundaries in ingestion using a pinned H3 library; no required PostgreSQL H3 extension |
@@ -660,8 +663,8 @@ downloads completed the three regions in 103.6 seconds, with one temporary HDF4
 file decoded at a time and no raster archive retained. Original headers, raw QA
 zero, unit scaling, native-grid fractional overlap, paired support, source hashes
 and explicit missingness are checked. These checks support a research artifact;
-they do not constitute a reviewed global scientific release. PostgreSQL ingestion
-and publication remain subsequent implementation steps.
+they do not constitute a reviewed global scientific release. The PostgreSQL pilot
+import is implemented below; scientific publication remains subsequent work.
 
 The frontend roadmap is exported in `catalog/variables.json`, with the complete
 human-readable list in `docs/VARIABLES.md` and proposed TypeScript response types
@@ -672,6 +675,26 @@ loaded. Eight quantities have pilot statistics and aspect has component outputs;
 the remaining candidates are planned or deferred. This contract is suitable for
 building selectors, with categorical vocabularies and source-specific limits
 added only after validation.
+
+The initial numeric pilot subset is implemented in
+`migrations/001_pilot_store.sql` and `scripts/load_pilots.py`. Docker Compose runs
+PostgreSQL 18/PostGIS with a persistent volume. The loader verifies input hashes,
+uses one transaction and a bundle identity for repeat imports, preserves source
+manifests, seals series, and exposes explicitly named `research.pilot_*` views.
+The imported domain contains 143,850 observation rows, including 13,639 explicit
+missing values. All 91 candidate definitions are discoverable, while only the 15
+realized numeric outputs have observation series. Full-cell geometry and clipped
+region support are stored separately. A dedicated API role reads the research
+views and has no write privileges. Measured storage is recorded in
+`research/pilots/database/load.json`.
+
+This migration is a bounded implementation of the design, not completion of the
+full specification. Categorical/boolean observations, fully normalized provider
+asset tables, production migration/ingestion role separation, immutable published
+releases, wide release projections, arbitrary research SQL execution/auditing,
+and the Rust HTTP API remain subsequent work. Until publication is implemented,
+pilot views explicitly expose research artifacts and catalog production flags
+remain false.
 
 1. Database setup, roles, migrations, catalog, grid, and temporal constraints.
 2. Processing lineage, typed observations, sealed series, and ingestion fixtures.

@@ -1,0 +1,47 @@
+name: earth-index
+
+services:
+  db:
+    image: postgis/postgis:18-3.6@sha256:4a43e3c3e5d55b9208240fc71db543b79c638766280c625a425bd0a2390989c4
+    environment:
+      POSTGRES_DB: earth_index
+      POSTGRES_USER: earth_index_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup_local_env.py first}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U earth_index_owner -d earth_index"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    shm_size: 256mb
+
+  loader:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: docker/loader.Dockerfile
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: earth_index
+      PGUSER: earth_index_owner
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup_local_env.py first}
+      API_DB_PASSWORD: ${API_DB_PASSWORD:?Run python3 scripts/setup_local_env.py first}
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - .:/workspace:ro
+      - ./research/pilots/database:/reports
+    working_dir: /workspace
+    entrypoint: [python, scripts/load_pilots.py]
+    command: [--report, /reports/load.json]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

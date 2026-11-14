@@ -68,8 +68,23 @@
     "note": "Excludes six terrain quantities with pilot outputs/components and three processed temperature quantities; includes deferred EVI. Catalog presence is not extracted data."
   },
   "postgresql": {
-    "status": "not_implemented_or_loaded",
-    "next_artifacts": "Migrations and CSV ingestion using the documented schema"
+    "status": "loaded_verified_research_pilot",
+    "deployment": "Docker Compose with rootless Docker on this workstation",
+    "schema": "../../migrations/001_pilot_store.sql",
+    "loader": "../../scripts/load_pilots.py",
+    "report": "database/load.json",
+    "repeat_import_report": "database/reload.json",
+    "counts": {
+      "observation_rows": 143850,
+      "valid_values": 130211,
+      "explicit_missing_values": 13639,
+      "cells": 959,
+      "series": 45,
+      "time_windows": 47
+    },
+    "database_bytes_at_repeat_import": 51123903,
+    "project_tables_and_indexes_bytes_at_repeat_import": 30941184,
+    "remaining": "Rust API, published releases and remaining DESIGN.md schema capabilities"
   },
   "all_91_variables_processed": false,
   "frontend_catalog": {

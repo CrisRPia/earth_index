@@ -3,9 +3,35 @@
 A PostgreSQL/PostGIS feature index for geographic screening and Earth–Moon–Mars
 analog research. See [DESIGN.md](DESIGN.md) for the database specification.
 
-The repository currently contains source discovery and working local terrain
-and temperature pilots. It does not yet contain a running PostgreSQL database,
-query API, or published scientific release.
+The repository contains source discovery, terrain and temperature pilots, and a
+working PostgreSQL/PostGIS import through Docker Compose. The API will be written
+in **Rust**; no HTTP API or published scientific release exists yet.
+
+## Local database with Docker
+
+```sh
+python3 scripts/setup_local_env.py
+docker compose up -d --wait db
+docker compose run --build --rm loader
+docker compose run --rm --entrypoint python loader scripts/test_postgres.py
+```
+
+This loads **143,850 numeric observation slots** for 959 cells in three regions:
+130,211 numeric values and 13,639 explicit missing values. All 91 candidates are
+cataloged; 15 concrete pilot output definitions have data. An identical import
+is reused rather than duplicated. The import is atomic and preserves source
+manifests, native units, temporal windows and clipped cell support.
+
+Measured storage is about **51 MB for the database**, including PostgreSQL/PostGIS
+catalogs, with **31 MB of project tables and indexes**. The source pilot artifacts
+occupy about **12.1 MB**, including **10.65 MB of CSVs**. No rasters are loaded.
+Container images and the PostgreSQL cluster's WAL are separate disk costs.
+
+The database listens on `127.0.0.1:5432` and persists in a named Docker volume.
+Private local connection strings are in ignored `.env`; the Rust API should use
+`API_DATABASE_URL`, whose role can read the `research` views. See
+[database operations and Rust integration](docs/DATABASE.md) and the measured
+[load report](research/pilots/database/load.json).
 
 ## Frontend catalog
 
@@ -170,6 +196,7 @@ rejects redirect hosts outside its configured AWS allowlist, so this optional
 path may need adaptation to current service routing.
 Emissivity and clear-sky layers were requested for later validation but are not
 yet included in the temperature summary CSVs. These are research artifacts;
-PostgreSQL loading and scientific publication remain subsequent steps.
+These numeric pilots are now loaded through Docker Compose; scientific
+publication and the Rust API remain subsequent steps.
 
 API: [AppEEARS documentation](https://appeears.earthdatacloud.nasa.gov/api/).

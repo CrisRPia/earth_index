@@ -2,6 +2,9 @@
 
 Demo: <https://earth-index-crisrpia.fly.dev/demo/>
 
+See [initial deployment verification](DEPLOYMENT_VERIFICATION.md) for the tested
+image/database identity and live checks.
+
 The [Fly configuration](../fly.toml) runs one Linux amd64 API/demo container in
 Ashburn (`iad`), with 4 performance vCPUs, 8 GiB RAM and a 10 GB encrypted volume.
 DuckDB uses four threads and a 5 GB memory limit, leaving room for the Rust
@@ -64,6 +67,8 @@ adopt this same Machine after the upload:
 
 ```sh
 fly apps create earth-index-crisrpia --org personal
+fly ips allocate-v4 --shared
+fly ips allocate-v6
 fly volumes create earth_data --region iad --size 10 --vm-size performance-4x --vm-memory 8192
 fly machine run registry.fly.io/earth-index-crisrpia:release-20261115 infinity \
   --region iad --volume earth_data:/data --entrypoint /bin/sleep \

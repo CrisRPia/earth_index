@@ -23,3 +23,9 @@ The API is a read-only SQL driver over native gRPC and binary gRPC-Web, with rec
 - [Historical PostGIS raster design](docs/POSTGIS_RASTER_DESIGN.md)
 
 The serving file currently decodes the validated quantized import, retaining its original source precision. Switching its storage to DOUBLE does not recover precision discarded in that earlier import. The original rasters, research pilots, processing checkpoints and PostgreSQL volume remain intact.
+
+## License
+
+Original project source code is licensed under the [Apache License, Version 2.0](LICENSE.txt).
+Third-party components and datasets retain their own licenses and attribution requirements;
+see [Data sources, citations and attribution](docs/DATA_SOURCES.md).

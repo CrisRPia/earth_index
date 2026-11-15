@@ -204,10 +204,15 @@ class PostgresPilotTests(unittest.TestCase):
             self.assertEqual(
                 conn.execute("SHOW default_transaction_read_only").fetchone()[0], "on"
             )
-            self.assertEqual(
-                conn.execute("SELECT count(*) FROM research.variables").fetchone()[0],
-                91,
-            )
+            expected_variables = {
+                variable["id"]
+                for variable in read(ROOT / "catalog/variables.json")["variables"]
+            }
+            visible_variables = {
+                row[0]
+                for row in conn.execute("SELECT variable_key FROM research.variables")
+            }
+            self.assertTrue(expected_variables.issubset(visible_variables))
             self.assertEqual(
                 conn.execute(
                     "SELECT count(*) FROM research.pilot_observations WHERE import_id=%s",

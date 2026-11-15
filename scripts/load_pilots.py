@@ -118,7 +118,7 @@ def migrate(conn):
     conn.execute(
         "CREATE TABLE IF NOT EXISTS public.earth_index_migrations (version text PRIMARY KEY, sha256 text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())"
     )
-    for path in sorted((ROOT / "migrations").glob("*.sql")):
+    for path in sorted((ROOT / "db" / "migrations").glob("*.sql")):
         previous = conn.execute(
             "SELECT sha256 FROM public.earth_index_migrations WHERE version = %s",
             (path.name,),

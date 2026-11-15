@@ -18,6 +18,7 @@ The API is a read-only SQL driver over native gRPC and binary gRPC-Web, with rec
 - [Frontend development](demo/README.md)
 - [Fly.io deployment and dataset transfer](docs/DEPLOYMENT.md)
 - [Scientific import methods and limitations](db/WORLD_IMPORT.md)
+- [Data sources, citations and attribution](docs/DATA_SOURCES.md)
 - [Preserved PostgreSQL ingestion and pilot tools](db/POSTGIS.md)
 - [Historical PostGIS raster design](docs/POSTGIS_RASTER_DESIGN.md)
 

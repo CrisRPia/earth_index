@@ -1,5 +1,10 @@
 # Resumable global 4 km acquisition
 
+For source citations, credits and the current field inventory, see
+[Data sources and methodology](../docs/DATA_SOURCES.md). This page describes the
+acquisition job; the prepared data is now served through the
+[DuckDB snapshot](README.md).
+
 Run controls from the repository root:
 
 ```sh

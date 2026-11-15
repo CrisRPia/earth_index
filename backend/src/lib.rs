@@ -24,6 +24,7 @@ use std::sync::Arc;
 use tonic::{codec::CompressionEncoding, service::Routes};
 use tower::Layer;
 use tower_http::{
+    compression::{CompressionLayer, CompressionLevel},
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
@@ -77,6 +78,9 @@ pub fn router(state: AppState) -> Router {
         .merge(demo::routes())
         .with_state(state)
         .merge(rpc_routes)
+        // HTTP encoding is transparent to browser gRPC-Web clients. The default
+        // predicate excludes native gRPC, which negotiates its own compression.
+        .layer(CompressionLayer::new().quality(CompressionLevel::Precise(1)))
         .layer(TraceLayer::new_for_grpc())
 }
 

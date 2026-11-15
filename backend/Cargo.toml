@@ -20,7 +20,7 @@ tonic-prost = "0.14.9"
 tonic-reflection = "0.14.9"
 tonic-web = "0.14.9"
 tower = { version = "0.5", features = ["util"] }
-tower-http = { version = "0.6", features = ["trace", "cors", "fs"] }
+tower-http = { version = "0.6", features = ["trace", "cors", "fs", "compression-gzip"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
@@ -28,6 +28,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tonic-prost-build = "0.14.9"
 
 [dev-dependencies]
+flate2 = "1"
 http-body-util = "0.1"
 
 [profile.release]

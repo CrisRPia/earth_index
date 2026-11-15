@@ -14,6 +14,11 @@ The [protobuf](proto/earth_index.proto) exposes Query, Metadata, Health and Samp
 
 `QueryResponse` retains positional columns/rows, including duplicate column names. The legacy `pg_type` protobuf field now describes DuckDB types. Integers within signed int64 remain exact; larger integers and DECIMAL values return strings. Lists/structs and JSON results return recursive values; BLOB and GEOMETRY results return bytes (geometry is WKB). SQL NULL remains a distinct null value.
 
+Browser responses also negotiate HTTP `Content-Encoding: gzip` at level 1 using
+`Accept-Encoding`. Browsers decompress the HTTP body before protobuf decoding;
+gRPC-Web message frames remain unchanged. Clients that decline gzip still get
+the uncompressed response. Native gRPC retains its protocol-level compression.
+
 ## SQL and bindings
 
 Use `:name` placeholders and map keys without the colon. Repeated names share a binding; quoted strings, identifiers, comments and dollar-quoted strings are preserved. Missing/unused parameters, positional placeholders, multiple statements and transaction/session commands are rejected.

@@ -155,6 +155,97 @@ async fn binary_browser_query_and_error_metadata() {
 
 #[tokio::test]
 #[ignore = "requires prepared DuckDB snapshot"]
+async fn http_gzip_preserves_browser_frames_and_native_grpc() {
+    use std::io::Read;
+
+    let app = app();
+    let message = proto::QueryRequest {
+        datasource_id: "earth-ed5bc9904a5f".into(),
+        query: "SELECT pack_u16([0,1,256,65534,NULL]::INTEGER[]) AS scores, repeat('abc',65536) AS payload".into(),
+        params: HashMap::new(),
+    }
+    .encode_to_vec();
+    let mut frame = vec![0];
+    frame.extend_from_slice(&(message.len() as u32).to_be_bytes());
+    frame.extend_from_slice(&message);
+    let mut baseline = None;
+    for encoding in ["identity", "gzip", "gzip;q=0"] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/earth_index.v1.EarthIndex/Query")
+                    .header("content-type", "application/grpc-web+proto")
+                    .header("x-grpc-web", "1")
+                    .header("accept-encoding", encoding)
+                    .body(Body::from(frame.clone()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(response.headers().get_all("vary").iter().any(|v| {
+            v.to_str()
+                .unwrap()
+                .to_ascii_lowercase()
+                .contains("accept-encoding")
+        }));
+        if encoding == "gzip" {
+            assert_eq!(response.headers()["content-encoding"], "gzip");
+            let bytes = response.into_body().collect().await.unwrap().to_bytes();
+            let mut decoded = Vec::new();
+            flate2::read::GzDecoder::new(bytes.as_ref())
+                .read_to_end(&mut decoded)
+                .unwrap();
+            assert!(bytes.len() * 10 < decoded.len());
+            assert_eq!(Some(decoded), baseline);
+        } else {
+            assert!(response.headers().get("content-encoding").is_none());
+            let bytes = response
+                .into_body()
+                .collect()
+                .await
+                .unwrap()
+                .to_bytes()
+                .to_vec();
+            if let Some(expected) = &baseline {
+                assert_eq!(&bytes, expected);
+            } else {
+                let length = u32::from_be_bytes(bytes[1..5].try_into().unwrap()) as usize;
+                assert_eq!(bytes[0], 0);
+                let result = proto::QueryResponse::decode(&bytes[5..5 + length]).unwrap();
+                assert_eq!(
+                    result.rows[0].values[0],
+                    value::wrap(Kind::BytesValue(vec![0, 0, 1, 0, 0, 1, 254, 255, 255, 255]))
+                );
+                assert!(String::from_utf8_lossy(&bytes[5 + length..]).contains("grpc-status:0"));
+                baseline = Some(bytes);
+            }
+        }
+    }
+    let response = app
+        .oneshot(
+            Request::builder()
+                .version(axum::http::Version::HTTP_2)
+                .method(Method::POST)
+                .uri("/earth_index.v1.EarthIndex/Health")
+                .header("content-type", "application/grpc")
+                .header("accept-encoding", "gzip")
+                .body(Body::from(vec![0; 5]))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert!(response.headers().get("content-encoding").is_none());
+    let body = response.into_body().collect().await.unwrap();
+    assert_eq!(body.trailers().unwrap()["grpc-status"], "0");
+    assert_eq!(body.to_bytes().as_ref(), &[0, 0, 0, 0, 2, 8, 1]);
+}
+
+#[tokio::test]
+#[ignore = "requires prepared DuckDB snapshot"]
 async fn preflight_health_and_schema_downloads() {
     let app = app();
     let request = Request::builder()

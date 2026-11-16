@@ -6,6 +6,7 @@ pub mod metadata;
 mod packing;
 pub mod params;
 pub mod planetary;
+mod request_log;
 pub mod rpc;
 pub mod sql;
 pub mod value;

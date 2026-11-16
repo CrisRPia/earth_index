@@ -11,63 +11,75 @@ impl proto::earth_index_server::EarthIndex for EarthIndexService {
         &self,
         request: Request<proto::SamplePointRequest>,
     ) -> Result<Response<proto::SamplePointResponse>, Status> {
-        let budget = request_timeout(&request)?.unwrap_or(crate::planetary::MAX_SAMPLE_TIME);
-        let response = self
-            .0
-            .planetary
-            .sample(request.into_inner(), budget)
-            .await?;
-        Ok(Response::new(response))
+        crate::request_log::run("SamplePoint", request, |request| async move {
+            let budget = request_timeout(&request)?.unwrap_or(crate::planetary::MAX_SAMPLE_TIME);
+            let response = self
+                .0
+                .planetary
+                .sample(request.into_inner(), budget)
+                .await?;
+            Ok(Response::new(response))
+        })
+        .await
     }
     async fn query(
         &self,
         request: Request<proto::QueryRequest>,
     ) -> Result<Response<proto::QueryResponse>, Status> {
-        let timeout = request_timeout(&request)?;
-        let request = request.into_inner();
-        if request.datasource_id.is_empty() {
-            return Err(Status::invalid_argument(
-                "datasource_id is required; call Metadata to discover datasources",
-            ));
-        }
-        let mut state = (*self.0).clone();
-        if let Some(timeout) = timeout {
-            if timeout.is_zero() {
-                return Err(Status::deadline_exceeded("Request deadline has elapsed"));
+        crate::request_log::run("Query", request, |request| async move {
+            let timeout = request_timeout(&request)?;
+            let request = request.into_inner();
+            if request.datasource_id.is_empty() {
+                return Err(Status::invalid_argument(
+                    "datasource_id is required; call Metadata to discover datasources",
+                ));
             }
-            let caller_ms = timeout.as_millis().max(1).min(u64::MAX as u128) as u64;
-            state.statement_timeout_ms = match state.statement_timeout_ms {
-                0 => caller_ms,
-                server_ms => server_ms.min(caller_ms),
-            };
-        }
-        let datasource_id = request.datasource_id.clone();
-        Ok(Response::new(
-            db::execute(&state, &datasource_id, request)
-                .await
-                .map_err(Status::from)?,
-        ))
+            let mut state = (*self.0).clone();
+            if let Some(timeout) = timeout {
+                if timeout.is_zero() {
+                    return Err(Status::deadline_exceeded("Request deadline has elapsed"));
+                }
+                let caller_ms = timeout.as_millis().max(1).min(u64::MAX as u128) as u64;
+                state.statement_timeout_ms = match state.statement_timeout_ms {
+                    0 => caller_ms,
+                    server_ms => server_ms.min(caller_ms),
+                };
+            }
+            let datasource_id = request.datasource_id.clone();
+            Ok(Response::new(
+                db::execute(&state, &datasource_id, request)
+                    .await
+                    .map_err(Status::from)?,
+            ))
+        })
+        .await
     }
     async fn metadata(
         &self,
         request: Request<proto::MetadataRequest>,
     ) -> Result<Response<proto::MetadataResponse>, Status> {
-        let timeout = request_timeout(&request)?.unwrap_or(Duration::from_secs(10));
-        let result = tokio::time::timeout(timeout, metadata::load(&self.0))
-            .await
-            .map_err(|_| Status::deadline_exceeded("Metadata deadline exceeded"))?
-            .map_err(Status::from)?;
-        Ok(Response::new(result))
+        crate::request_log::run("Metadata", request, |request| async move {
+            let timeout = request_timeout(&request)?.unwrap_or(Duration::from_secs(10));
+            let result = tokio::time::timeout(timeout, metadata::load(&self.0))
+                .await
+                .map_err(|_| Status::deadline_exceeded("Metadata deadline exceeded"))?
+                .map_err(Status::from)?;
+            Ok(Response::new(result))
+        })
+        .await
     }
     async fn health(
         &self,
         request: Request<proto::HealthRequest>,
     ) -> Result<Response<proto::HealthResponse>, Status> {
-        let timeout = request_timeout(&request)?.unwrap_or(Duration::from_secs(5));
-        let ready = tokio::time::timeout(timeout, ready(&self.0))
-            .await
-            .map_err(|_| Status::deadline_exceeded("Health deadline exceeded"))?;
-        Ok(Response::new(proto::HealthResponse { ready }))
+        crate::request_log::run("Health", request, |request| async move {
+            let timeout = request_timeout(&request)?.unwrap_or(Duration::from_secs(5));
+            let ready = tokio::time::timeout(timeout, ready(&self.0))
+                .await
+                .map_err(|_| Status::deadline_exceeded("Health deadline exceeded"))?;
+            Ok(Response::new(proto::HealthResponse { ready }))
+        })
+        .await
     }
 }
 

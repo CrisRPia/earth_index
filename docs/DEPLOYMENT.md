@@ -108,6 +108,19 @@ fly checks list
 fly logs
 ```
 
+Each decoded API RPC logs `RPC received` with its method, SQL/parameters or
+point coordinates, followed by `RPC completed` or `RPC failed`. Match entries
+using `request_id` within the same Machine/process; Fly's request ID is included
+when available. Request previews are limited to 8 KiB and marked when truncated;
+credentials in headers and response contents are not logged. SQL parameter
+values are logged, so avoid sending secrets as query parameters.
+`elapsed_ms` measures the handler (including waiting for a database connection),
+and `response_protobuf_bytes` is the uncompressed protobuf size. Neither includes
+subsequent encoding, compression or network transfer. Dropped handlers are logged
+separately. These are stdout logs, available through `fly logs`, not a query history
+stored in the database. Requests from before this logging deployment cannot be
+reconstructed from them.
+
 The lightweight check verifies demo assets, gRPC-Web health/metadata, named SQL
 parameters, the global dataset and packed scores. `--world` exercises the real
 query builder and validates every returned region's packed score shape and codes.
